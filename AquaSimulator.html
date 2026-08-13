@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaGuard — Smart Water Conservation & Overflow Prevention Simulator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #f4f9fa;
+    --bg-soft: #eaf5f4;
+    --card: #ffffff;
+    --line: #dbeae8;
+    --ink: #12262a;
+    --ink-soft: #4b6367;
+    --ink-faint: #7c9296;
+    --teal: #0e7c86;
+    --teal-deep: #0b5e66;
+    --teal-tint: #e3f4f2;
+    --blue: #3b7fc4;
+    --blue-tint: #e8f1fb;
+    --green: #2e9e6d;
+    --green-tint: #e6f6ee;
+    --amber: #c98a1e;
+    --amber-tint: #fbf1de;
+    --orange: #d9722c;
+    --orange-tint: #fceee2;
+    --red: #d1453b;
+    --red-tint: #fbe7e5;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --shadow: 0 6px 24px rgba(15,60,65,0.07);
+    --shadow-sm: 0 2px 10px rgba(15,60,65,0.06);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1100px 500px at 90% -10%, var(--bg-soft), transparent),
+      radial-gradient(900px 500px at -10% 20%, #eef8fb, transparent),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+  @font-face{ font-family:'Space Grotesk'; src:local('Space Grotesk'); }
+  h1,h2,h3,.display{ font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:-0.02em; }
+  .mono{ font-family:'JetBrains Mono','SFMono-Regular',Consolas,monospace; }
+  a{color:inherit;}
+  img{max-width:100%;}
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
+  .visually-hidden{ position:absolute !important; width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap; }
+  :focus-visible{ outline:3px solid var(--teal); outline-offset:2px; border-radius:6px; }
+
+  /* ---------- Header ---------- */
+  header.site{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .header-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 24px; max-width:1180px; margin:0 auto; gap:16px; flex-wrap:wrap;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.25rem; }
+  .brand .drop{
+    width:38px;height:38px;border-radius:11px;
+    background:linear-gradient(160deg,var(--teal),var(--blue));
+    display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:#fff;
+    box-shadow:0 4px 12px rgba(14,124,134,0.35);
+  }
+  nav.mainnav{ display:flex; gap:4px; flex-wrap:wrap; }
+  nav.mainnav a{
+    text-decoration:none; color:var(--ink-soft); font-size:0.92rem; font-weight:600;
+    padding:8px 12px; border-radius:8px; transition:background .15s,color .15s;
+  }
+  nav.mainnav a:hover{ background:var(--teal-tint); color:var(--teal-deep); }
+  .status-pill{
+    display:flex; align-items:center; gap:7px;
+    background:var(--green-tint); color:#1f7a4d;
+    border:1px solid #c9ecda; padding:6px 12px; border-radius:999px;
+    font-size:0.82rem; font-weight:700; white-space:nowrap;
+  }
+  .dot{ width:8px;height:8px;border-radius:50%; background:#2e9e6d; box-shadow:0 0 0 3px rgba(46,158,109,0.25); }
+  .dot.blink{ animation:pulse 1.8s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.4;} }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding:64px 0 40px; }
+  .hero-grid{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:52px; align-items:center; }
+  .badge-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:0.76rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    padding:6px 12px; border-radius:999px;
+  }
+  .badge.sim{ background:var(--amber-tint); color:#8a5c0f; border:1px solid #f0dcaf; }
+  .badge.mvp{ background:var(--blue-tint); color:#2a5d92; border:1px solid #cfe1f6; }
+  .hero h1{ font-size:2.7rem; line-height:1.08; margin:0 0 16px; color:var(--ink); }
+  .hero .tagline{ font-size:1.06rem; color:var(--ink-soft); max-width:520px; margin-bottom:28px; }
+  .btn{
+    border:none; cursor:pointer; font-weight:700; font-family:inherit; font-size:0.95rem;
+    padding:13px 22px; border-radius:12px; transition:transform .12s, box-shadow .12s, background .12s;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{ background:linear-gradient(160deg,var(--teal),var(--teal-deep)); color:#fff; box-shadow:0 8px 20px rgba(14,124,134,.28); }
+  .btn-primary:hover{ box-shadow:0 10px 26px rgba(14,124,134,.36); }
+  .btn-ghost{ background:#fff; color:var(--teal-deep); border:1.5px solid var(--line); }
+  .btn-ghost:hover{ border-color:var(--teal); background:var(--teal-tint); }
+  .btn-soft{ background:var(--teal-tint); color:var(--teal-deep); }
+  .btn-soft:hover{ background:#d3ece9; }
+  .hero-actions{ display:flex; gap:14px; flex-wrap:wrap; }
+
+  .tank-illustration{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .tank-card{
+    background:var(--card); border-radius:22px; box-shadow:var(--shadow);
+    padding:22px; border:1px solid var(--line); width:100%; max-width:340px;
+  }
+  .tank-frame{
+    position:relative; width:100%; height:260px; border-radius:16px;
+    background:linear-gradient(180deg,#f7fcfd,#eef8f9);
+    border:3px solid #c7dedd; overflow:hidden;
+  }
+  .tank-frame .rule{
+    position:absolute; left:0; right:0; height:1px; background:rgba(14,124,134,0.12);
+  }
+  .water{
+    position:absolute; left:0; right:0; bottom:0; height:50%;
+    background:linear-gradient(180deg, rgba(59,127,196,0.55), rgba(14,124,134,0.75));
+    transition:height .7s cubic-bezier(.4,0,.2,1);
+  }
+  .water .wave{
+    position:absolute; top:-14px; left:0; width:200%; height:24px;
+    background:radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 70%);
+    background-size:60px 24px; background-repeat:repeat-x;
+    animation:waveMove 3.2s linear infinite;
+    opacity:.8;
+  }
+  @keyframes waveMove{ from{transform:translateX(0);} to{transform:translateX(-60px);} }
+  .sensor-beam{
+    position:absolute; top:10px; left:50%; width:2px; transform:translateX(-50%);
+    background:repeating-linear-gradient(180deg, var(--teal) 0 6px, transparent 6px 11px);
+    transition:height .7s cubic-bezier(.4,0,.2,1);
+  }
+  .sensor-head{
+    position:absolute; top:2px; left:50%; transform:translateX(-50%);
+    width:34px; height:14px; background:#eef6f6; border:2px solid var(--teal);
+    border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px;
+  }
+  .tank-caption{ text-align:center; font-size:0.86rem; color:var(--ink-faint); margin-top:8px; }
+  .level-readout{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.5rem; color:var(--teal-deep); text-align:center; }
+
+  section{ padding:56px 0; }
+  .section-head{ max-width:680px; margin:0 auto 34px; text-align:center; }
+  .eyebrow{ font-size:0.78rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--teal); margin-bottom:8px; }
+  .section-head h2{ font-size:2rem; margin:0 0 10px; }
+  .section-head p{ color:var(--ink-soft); margin:0; }
+
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); }
+  .pad{ padding:26px; }
+
+  /* ---------- Simulator ---------- */
+  .sim-grid{ display:grid; grid-template-columns:1fr 1.15fr; gap:28px; align-items:start; }
+  .big-tank-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .big-tank-card{ padding:28px; width:100%; max-width:380px; }
+  .big-tank-frame{ height:340px; }
+  .sensor-label{
+    display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:14px;
+    font-weight:700; color:var(--teal-deep); font-size:0.95rem;
+  }
+  .metric-chip{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--bg-soft); border-radius:10px; padding:10px 14px; margin-top:8px; font-size:0.88rem;
+  }
+  .metric-chip b{ font-family:'Space Grotesk',sans-serif; color:var(--ink); }
+
+  .controls-card{ padding:28px; }
+  .slider-label{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .slider-label span{ font-weight:700; }
+  .slider-value{ font-family:'Space Grotesk',sans-serif; font-size:2rem; font-weight:700; color:var(--teal); }
+  input[type=range]{
+    width:100%; height:10px; border-radius:999px; appearance:none;
+    background:linear-gradient(90deg, var(--green) 0%, var(--amber) 60%, var(--orange) 80%, var(--red) 100%);
+    outline:none; margin:10px 0 4px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none; width:26px; height:26px; border-radius:50%; background:#fff;
+    border:4px solid var(--teal-deep); box-shadow:0 3px 8px rgba(0,0,0,.2); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:22px; height:22px; border-radius:50%; background:#fff; border:4px solid var(--teal-deep); cursor:pointer;
+  }
+  .scale-row{ display:flex; justify-content:space-between; font-size:0.75rem; color:var(--ink-faint); margin-bottom:22px; }
+
+  .quick-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:12px; }
+  .qbtn{
+    padding:12px 10px; border-radius:12px; border:1.5px solid var(--line); background:#fff;
+    font-weight:700; font-size:0.86rem; cursor:pointer; transition:.15s; text-align:left;
+  }
+  .qbtn:hover{ transform:translateY(-2px); box-shadow:var(--shadow-sm); }
+  .qbtn.empty{ border-color:#c9ecda; } .qbtn.normal{ border-color:#f0dcaf; }
+  .qbtn.high{ border-color:#f2cba3; } .qbtn.critical{ border-color:#f0bcb8; }
+  .reset-row{ display:flex; gap:10px; margin-top:6px; }
+
+  .status-banner{
+    margin-top:20px; padding:16px 18px; border-radius:14px; display:flex; align-items:center; gap:12px;
+    border:1.5px solid; transition:.3s;
+  }
+  .status-banner .icon{ font-size:1.6rem; }
+  .status-banner .txt b{ display:block; font-size:1.02rem; font-family:'Space Grotesk',sans-serif; }
+  .status-banner .txt span{ font-size:0.86rem; color:var(--ink-soft); }
+
+  /* ---------- Sensor / Decision sections ---------- */
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .flow-vert{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .flow-node{
+    width:100%; background:var(--teal-tint); border:1.5px solid #cdeae7; border-radius:12px;
+    padding:12px 16px; text-align:center; font-weight:700; color:var(--teal-deep); font-size:0.9rem;
+  }
+  .flow-arrow{ color:var(--ink-faint); font-size:1.1rem; }
+  .reading-box{
+    text-align:center; padding:26px 10px; background:linear-gradient(160deg,var(--blue-tint),#fff);
+    border-radius:16px; border:1px solid var(--line);
+  }
+  .reading-box .num{ font-family:'Space Grotesk',sans-serif; font-size:2.6rem; font-weight:700; color:var(--blue); }
+  .reading-box .lbl{ font-size:0.8rem; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; margin-top:6px; }
+  .sim-note{
+    font-size:0.78rem; color:var(--ink-faint); background:var(--bg-soft); border-radius:8px; padding:8px 12px; margin-top:14px; text-align:center;
+  }
+
+  .decision-flow{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; align-items:stretch; }
+  .decision-step{
+    background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:16px 12px; text-align:center; position:relative; margin:0 4px;
+  }
+  .decision-step .n{ font-size:0.72rem; font-weight:800; color:var(--teal); letter-spacing:.05em; text-transform:uppercase; }
+  .decision-step .t{ font-weight:700; margin-top:6px; font-size:0.92rem; }
+  .decision-connector{ display:flex; align-items:center; justify-content:center; color:var(--ink-faint); }
+
+  .decision-result{
+    margin-top:22px; display:grid; grid-template-columns:1fr 1fr; gap:18px;
+  }
+  .result-card{ padding:20px; border-radius:14px; }
+  .result-card h4{ margin:0 0 6px; font-size:0.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); }
+  .result-card .val{ font-family:'Space Grotesk',sans-serif; font-size:1.4rem; font-weight:700; }
+
+  /* risk states */
+  .risk-normal{ background:var(--green-tint); border-color:#c9ecda; color:#1f7a4d; }
+  .risk-medium{ background:var(--amber-tint); border-color:#f0dcaf; color:#8a5c0f; }
+  .risk-high{ background:var(--orange-tint); border-color:#f2cba3; color:#a1521a; }
+  .risk-critical{ background:var(--red-tint); border-color:#f0bcb8; color:#a3372e; }
+
+  .risk-legend{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:26px; }
+  .risk-legend .card{ padding:18px; text-align:left; }
+  .risk-legend .rng{ font-size:0.76rem; color:var(--ink-faint); font-weight:700; margin-bottom:4px; }
+  .risk-legend .lab{ font-weight:800; font-size:1rem; margin-bottom:6px; }
+  .risk-legend .desc{ font-size:0.85rem; color:var(--ink-soft); }
+  .risk-legend .card.active{ box-shadow:0 0 0 3px var(--teal-deep) inset, var(--shadow); }
+
+  /* ---------- Prediction ---------- */
+  .predict-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px; }
+  .predict-stat{ padding:18px; text-align:center; }
+  .predict-stat .lbl{ font-size:0.76rem; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+  .predict-stat .val{ font-family:'Space Grotesk',sans-serif; font-size:1.55rem; font-weight:700; color:var(--teal-deep); }
+  .timeline-wrap{ padding:30px 26px; }
+  .timeline-track{ position:relative; height:14px; background:var(--bg-soft); border-radius:999px; margin:36px 0 8px; }
+  .timeline-fill{ position:absolute; left:0; top:0; bottom:0; border-radius:999px; background:linear-gradient(90deg,var(--green),var(--amber),var(--orange)); transition:width .6s; }
+  .timeline-marker{ position:absolute; top:-9px; width:2px; height:32px; background:var(--red); }
+  .timeline-marker .lbl{ position:absolute; top:-24px; left:50%; transform:translateX(-50%); font-size:0.72rem; font-weight:800; color:var(--red); white-space:nowrap; }
+  .timeline-now{ position:absolute; top:-9px; width:14px; height:14px; border-radius:50%; background:var(--teal-deep); border:3px solid #fff; box-shadow:0 0 0 2px var(--teal-deep); transform:translateX(-50%); }
+  .timeline-legend{ display:flex; justify-content:space-between; font-size:0.78rem; color:var(--ink-faint); margin-top:18px; }
+
+  /* ---------- Chart ---------- */
+  .chart-card{ padding:24px; }
+  .chart-wrap{ position:relative; height:260px; }
+
+  /* ---------- Alerts ---------- */
+  .alert-stack{ display:flex; flex-direction:column; gap:12px; max-width:640px; margin:0 auto; }
+  .alert-box{
+    display:none; align-items:center; gap:14px; padding:16px 18px; border-radius:14px; border:1.5px solid;
+    font-weight:700;
+  }
+  .alert-box.show{ display:flex; }
+  .alert-box .icon{ font-size:1.5rem; }
+  .alert-high{ background:var(--orange-tint); border-color:#f2cba3; color:#a1521a; }
+  .alert-critical{ background:var(--red-tint); border-color:#f0bcb8; color:#a3372e; }
+  .alert-none{ display:flex; background:var(--green-tint); border-color:#c9ecda; color:#1f7a4d; }
+
+  /* ---------- Pump ---------- */
+  .pump-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:center; }
+  .pump-visual{ display:flex; flex-direction:column; align-items:center; gap:14px; padding:26px; }
+  .pump-icon{
+    width:84px;height:84px;border-radius:50%; display:flex;align-items:center;justify-content:center;
+    font-size:2.2rem; transition:.3s; border:3px solid;
+  }
+  .pump-icon.on{ background:var(--green-tint); border-color:#8fd6ac; }
+  .pump-icon.off{ background:var(--red-tint); border-color:#eaa39d; }
+  .pump-state-label{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.15rem; }
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:16px 18px; background:var(--bg-soft); border-radius:12px; margin-top:16px; }
+  .switch{ position:relative; width:48px; height:26px; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider-toggle{ position:absolute; cursor:pointer; inset:0; background:#c8d6d6; border-radius:999px; transition:.25s; }
+  .slider-toggle:before{ content:""; position:absolute; height:20px; width:20px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.25s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  input:checked + .slider-toggle{ background:var(--teal); }
+  input:checked + .slider-toggle:before{ transform:translateX(22px); }
+  .pump-note{ font-size:0.8rem; color:var(--ink-faint); margin-top:14px; text-align:center; }
+
+  /* ---------- Recommendation ---------- */
+  .reco-card{ max-width:680px; margin:0 auto; padding:30px; text-align:center; }
+  .reco-card .icon{ font-size:2.2rem; margin-bottom:10px; }
+  .reco-card p{ font-size:1.05rem; margin:0; }
+
+  /* ---------- Sustainability ---------- */
+  .impact-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .impact-card{ padding:26px; text-align:center; }
+  .impact-card .ic{ width:56px;height:56px;border-radius:14px; display:flex;align-items:center;justify-content:center; font-size:1.5rem; margin:0 auto 14px; }
+  .impact-card:nth-child(1) .ic{ background:var(--blue-tint); }
+  .impact-card:nth-child(2) .ic{ background:var(--amber-tint); }
+  .impact-card:nth-child(3) .ic{ background:var(--green-tint); }
+  .impact-card h4{ margin:0 0 6px; font-size:1rem; }
+  .impact-card p{ margin:0; color:var(--ink-soft); font-size:0.88rem; }
+
+  /* ---------- Scale progression ---------- */
+  .scale-flow{ display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
+  .scale-node{ background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:14px 20px; font-weight:700; font-size:0.9rem; }
+  .scale-arrow{ color:var(--teal); font-size:1.2rem; }
+
+  /* ---------- Future IoT ---------- */
+  .future-grid{ display:grid; grid-template-columns:1fr auto 1fr; gap:24px; align-items:center; }
+  .future-card{ padding:26px; }
+  .future-card h4{ margin:0 0 12px; font-size:0.82rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); }
+  .chip-list{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ background:var(--bg-soft); border-radius:999px; padding:6px 12px; font-size:0.82rem; font-weight:600; }
+  .future-arrow{ font-size:1.8rem; color:var(--teal); text-align:center; }
+
+  /* ---------- IPO ---------- */
+  .ipo-grid{ display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:10px; align-items:center; }
+  .ipo-col{ display:flex; flex-direction:column; gap:8px; }
+  .ipo-title{ text-align:center; font-weight:800; font-size:0.78rem; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); margin-bottom:6px; }
+  .ipo-node{ background:#fff; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:0.84rem; font-weight:600; text-align:center; }
+  .ipo-arrow{ font-size:1.4rem; color:var(--ink-faint); text-align:center; }
+
+  /* ---------- Tech ---------- */
+  .tech-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+  .tech-card ul{ margin:0; padding-left:18px; color:var(--ink-soft); font-size:0.9rem; }
+  .tech-card li{ margin-bottom:6px; }
+  .tech-card h4{ margin:0 0 12px; }
+
+  /* ---------- Disclaimer ---------- */
+  .disclaimer{ max-width:760px; margin:0 auto; padding:22px 26px; background:var(--blue-tint); border:1px solid #cfe1f6; border-radius:14px; font-size:0.88rem; color:#284a6b; text-align:center; }
+
+  /* ---------- Footer ---------- */
+  footer{ background:#0f3335; color:#dcf0ee; padding:40px 0 28px; margin-top:20px; }
+  footer .wrap{ display:flex; flex-direction:column; gap:6px; align-items:center; text-align:center; }
+  footer .brand-f{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:1.1rem; margin-bottom:8px; }
+  footer p{ margin:2px 0; font-size:0.85rem; color:#a9cdc9; }
+  footer .rights{ margin-top:10px; font-size:0.78rem; color:#7fa7a3; }
+
+  /* ---------- Presentation mode ---------- */
+  .presentation-hide{ display:none !important; }
+  body.presentation .presentation-only-hide{ display:none !important; }
+  body.presentation section{ padding:26px 0; }
+  body.presentation .big-tank-frame{ height:420px; }
+  body.presentation .big-tank-card{ max-width:460px; }
+  body.presentation .sim-grid{ grid-template-columns:1fr; justify-items:center; }
+  body.presentation .controls-card{ max-width:640px; width:100%; }
+  body.presentation .slider-value{ font-size:3rem; }
+  body.presentation .status-banner{ font-size:1.1rem; padding:22px; }
+  body.presentation .status-banner .icon{ font-size:2.2rem; }
+  .exit-pres-btn{ display:none; position:fixed; top:18px; right:18px; z-index:200; }
+  body.presentation .exit-pres-btn{ display:inline-flex; }
+  body.presentation .present-btn-label{ display:none; }
+
+  #demoToast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(120%);
+    background:var(--teal-deep); color:#fff; padding:14px 24px; border-radius:12px; font-weight:700;
+    box-shadow:0 10px 30px rgba(0,0,0,.25); z-index:300; transition:transform .3s; font-size:0.92rem;
+  }
+  #demoToast.show{ transform:translateX(-50%) translateY(0); }
+
+  @media(max-width:920px){
+    .hero-grid, .sim-grid, .two-col, .pump-grid, .future-grid, .predict-grid, .risk-legend, .impact-grid, .tech-grid{ grid-template-columns:1fr; }
+    .decision-flow{ grid-template-columns:1fr; }
+    .decision-connector{ transform:rotate(90deg); padding:2px 0; }
+    .decision-result{ grid-template-columns:1fr; }
+    .ipo-grid{ grid-template-columns:1fr; }
+    .ipo-arrow{ transform:rotate(90deg); }
+    nav.mainnav{ display:none; }
+    .future-arrow{ transform:rotate(90deg); }
+  }
+  @media(prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<button class="btn btn-primary exit-pres-btn" id="exitPresBtn" onclick="togglePresentation(false)">✕ Exit Presentation Mode</button>
+<div id="demoToast" role="status" aria-live="polite"></div>
+
+<header class="site presentation-hide">
+  <div class="header-inner">
+    <div class="brand"><span class="drop">💧</span> AquaGuard</div>
+    <nav class="mainnav" aria-label="Section navigation">
+      <a href="#simulator">Simulator</a>
+      <a href="#sensor">Sensor</a>
+      <a href="#risk">Risk Analysis</a>
+      <a href="#prediction">Prediction</a>
+      <a href="#sustainability">Sustainability</a>
+      <a href="#about">About</a>
+    </nav>
+    <div class="status-pill"><span class="dot blink"></span> System Online</div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="badge-row">
+        <span class="badge sim">● Simulation Mode</span>
+        <span class="badge mvp">24-Hour Hackathon MVP</span>
+      </div>
+      <h1>Prevent Water Waste Before Overflow Happens.</h1>
+      <p class="tagline">AquaGuard simulates an intelligent water-level monitoring system that continuously analyses tank levels, predicts overflow risk and provides timely preventive alerts.</p>
+      <p class="tagline" style="font-weight:700;color:var(--teal-deep);margin-top:-14px;">"Sense Water. Predict Risk. Prevent Waste."</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="scrollToId('simulator')">▶ Start Simulation</button>
+        <button class="btn btn-ghost" onclick="scrollToId('ipo')">How It Works</button>
+      </div>
+    </div>
+    <div class="tank-illustration">
+      <div class="tank-card">
+        <div class="sensor-label">📡 Ultrasonic Sensor</div>
+        <div class="tank-frame" id="heroTankFrame">
+          <div class="sensor-head">◉</div>
+          <div class="sensor-beam" id="heroBeam"></div>
+          <div class="water" id="heroWater"><div class="wave"></div></div>
+        </div>
+        <div class="level-readout" id="heroLevelReadout">50%</div>
+        <div class="tank-caption">Live simulated tank level</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SIMULATOR -->
+<section id="simulator">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Live Simulator</div>
+      <h2>Live Water Tank Simulator</h2>
+      <p>Adjust the water level and watch the sensor, risk engine, alerts and pump respond instantly.</p>
+    </div>
+
+    <div class="sim-grid">
+      <div class="big-tank-wrap">
+        <div class="card big-tank-card">
+          <div class="sensor-label">📡 Ultrasonic Sensor</div>
+          <div class="tank-frame big-tank-frame">
+            <div class="sensor-head">◉</div>
+            <div class="sensor-beam" id="mainBeam"></div>
+            <div class="water" id="mainWater"><div class="wave"></div></div>
+          </div>
+          <div class="level-readout" id="mainLevelReadout">50%</div>
+          <div class="metric-chip"><span>Sensor Distance</span><b id="mainDistance">10.0 cm</b></div>
+          <div class="metric-chip"><span>Risk Status</span><b id="mainRiskLabel">🟡 MEDIUM</b></div>
+        </div>
+      </div>
+
+      <div class="card controls-card">
+        <div class="slider-label"><span>Water Level</span><span class="slider-value" id="sliderValue">50%</span></div>
+        <input type="range" min="0" max="100" value="50" id="levelSlider" aria-label="Water level percentage">
+        <div class="scale-row"><span>0% Empty</span><span>50%</span><span>100% Full</span></div>
+
+        <div class="quick-grid">
+          <button class="qbtn empty" onclick="setLevel(20,true)">🟢 Empty Tank<br><span style="font-weight:400;color:var(--ink-faint);">20%</span></button>
+          <button class="qbtn normal" onclick="setLevel(50,true)">🟡 Normal Level<br><span style="font-weight:400;color:var(--ink-faint);">50%</span></button>
+          <button class="qbtn high" onclick="setLevel(80,true)">🟠 High Level<br><span style="font-weight:400;color:var(--ink-faint);">80%</span></button>
+          <button class="qbtn critical" onclick="setLevel(95,true)">🔴 Critical Level<br><span style="font-weight:400;color:var(--ink-faint);">95%</span></button>
+        </div>
+        <div class="reset-row">
+          <button class="btn btn-ghost" style="flex:1;" onclick="resetSimulation()">↺ Reset Simulation</button>
+          <button class="btn btn-soft" style="flex:1;" onclick="runDemo()" id="demoBtn">🎬 Run Demo</button>
+        </div>
+        <div class="reset-row presentation-only-hide">
+          <button class="btn btn-primary" style="flex:1;" onclick="togglePresentation(true)">🎤 Presentation Mode</button>
+        </div>
+
+        <div class="status-banner" id="statusBanner">
+          <div class="icon" id="statusIcon">🟡</div>
+          <div class="txt">
+            <b id="statusTitle">MEDIUM</b>
+            <span id="statusDesc">Continue monitoring the water level.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SENSOR -->
+<section id="sensor" style="background:var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Sensing Layer</div>
+      <h2>Ultrasonic Sensor Simulation</h2>
+      <p>The ultrasonic sensor measures the distance between the sensor and the water surface.</p>
+    </div>
+    <div class="two-col">
+      <div class="card pad">
+        <div class="reading-box">
+          <div class="num mono" id="sensorReading">10.0 cm</div>
+          <div class="lbl">Simulated Sensor Reading</div>
+        </div>
+        <div class="sim-note">Tank height assumed: 20 cm — empty tank returns a large distance, full tank returns a small distance.</div>
+      </div>
+      <div class="card pad">
+        <div class="metric-chip"><span>Tank Height (configured)</span><b>20.0 cm</b></div>
+        <div class="metric-chip"><span>Water Level</span><b id="sensorLevelPct">50%</b></div>
+        <div class="metric-chip"><span>Water Column Height</span><b id="sensorColumn">10.0 cm</b></div>
+        <div class="metric-chip"><span>Distance to Surface</span><b id="sensorDist2">10.0 cm</b></div>
+        <div class="sim-note">This value is not an actual physical sensor reading — it is calculated from the simulated water level.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DECISION ENGINE -->
+<section id="decision">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Processing Layer</div>
+      <h2>Smart Decision Engine</h2>
+      <p>Ultrasonic reading → water level % → risk classification → preventive action.</p>
+    </div>
+
+    <div class="decision-flow">
+      <div class="decision-step"><div class="n">Step 1</div><div class="t">Ultrasonic Reading</div></div>
+      <div class="decision-connector">→</div>
+      <div class="decision-step"><div class="n">Step 2</div><div class="t">Water Level %</div></div>
+      <div class="decision-connector">→</div>
+      <div class="decision-step"><div class="n">Step 3</div><div class="t">Risk Classification</div></div>
+      <div class="decision-connector">→</div>
+      <div class="decision-step"><div class="n">Step 4</div><div class="t">Preventive Action</div></div>
+    </div>
+
+    <div class="decision-result">
+      <div class="result-card risk-medium" id="decisionCard">
+        <h4>Current Decision</h4>
+        <div class="val" id="decisionLevel">Water Level: 50%</div>
+        <div class="val" id="decisionRisk" style="margin-top:4px;">MEDIUM RISK</div>
+      </div>
+      <div class="card pad">
+        <h4 style="margin:0 0 6px;font-size:0.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);">Recommended Action</h4>
+        <div class="val" id="decisionAction" style="font-size:1rem;font-weight:600;">Continue monitoring the water level.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RISK LEVELS -->
+<section id="risk" style="background:var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Risk Analysis</div>
+      <h2>Risk Classification Levels</h2>
+      <p>AquaGuard continuously classifies tank status into four risk bands.</p>
+    </div>
+    <div class="risk-legend" id="riskLegend">
+      <div class="card" data-range="normal">
+        <div class="rng">0 – 59%</div>
+        <div class="lab">🟢 NORMAL</div>
+        <div class="desc">Water level is within the safe operating range.</div>
+      </div>
+      <div class="card" data-range="medium">
+        <div class="rng">60 – 79%</div>
+        <div class="lab">🟡 MEDIUM</div>
+        <div class="desc">Continue monitoring the water level.</div>
+      </div>
+      <div class="card" data-range="high">
+        <div class="rng">80 – 89%</div>
+        <div class="lab">🟠 HIGH</div>
+        <div class="desc">Water level is approaching the critical threshold.</div>
+      </div>
+      <div class="card" data-range="critical">
+        <div class="rng">90 – 100%</div>
+        <div class="lab">🔴 CRITICAL</div>
+        <div class="desc">Immediate preventive action recommended.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PREDICTION -->
+<section id="prediction">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Predictive Layer</div>
+      <h2>Smart Overflow Prediction</h2>
+      <p>A simulation-based projection of when the tank could reach critical level at the current rise rate.</p>
+    </div>
+
+    <div class="predict-grid">
+      <div class="card predict-stat"><div class="lbl">Current Level</div><div class="val" id="predCurrent">50%</div></div>
+      <div class="card predict-stat"><div class="lbl">Rise Rate</div><div class="val" id="predRate">5%/min</div></div>
+      <div class="card predict-stat"><div class="lbl">Critical Threshold</div><div class="val">90%</div></div>
+      <div class="card predict-stat"><div class="lbl">Est. Time to Critical</div><div class="val" id="predTime">8.0 min</div></div>
+    </div>
+
+    <div class="card timeline-wrap">
+      <div class="timeline-track">
+        <div class="timeline-fill" id="timelineFill" style="width:50%;"></div>
+        <div class="timeline-now" id="timelineNow" style="left:50%;"></div>
+        <div class="timeline-marker" style="left:90%;"><span class="lbl">90% Critical</span></div>
+      </div>
+      <div class="timeline-legend"><span>0%</span><span id="timelineMinLabel">~8.0 min to critical</span><span>100%</span></div>
+      <div class="sim-note" style="margin-top:18px;">Simulation-based prediction — assumes a constant hypothetical rise rate, not a real-world measurement.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HISTORY CHART -->
+<section id="history" style="background:var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Real-Time History</div>
+      <h2>Water Level vs Time</h2>
+      <p>Every level change is logged and plotted as a simulated reading.</p>
+    </div>
+    <div class="card chart-card">
+      <div class="chart-wrap"><canvas id="historyChart" role="img" aria-label="Water level history chart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ALERTS -->
+<section id="alerts">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Notification Layer</div>
+      <h2>Smart Alert System</h2>
+      <p>Alerts escalate automatically as the simulated water level rises.</p>
+    </div>
+    <div class="alert-stack">
+      <div class="alert-box alert-none" id="alertNone"><span class="icon">✅</span><span>No active alerts — level is within a safe range.</span></div>
+      <div class="alert-box alert-high" id="alertHigh"><span class="icon">⚠️</span><span>HIGH WATER LEVEL</span></div>
+      <div class="alert-box alert-critical" id="alertCritical"><span class="icon">🚨</span><span>OVERFLOW RISK</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- PUMP CONTROL -->
+<section id="pump" style="background:var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Actuation Layer</div>
+      <h2>Preventive Pump Control</h2>
+      <p>Simulation only — no physical pump is connected.</p>
+    </div>
+    <div class="pump-grid">
+      <div class="card pump-visual">
+        <div class="pump-icon on" id="pumpIcon">🟢</div>
+        <div class="pump-state-label" id="pumpStateLabel">RUNNING</div>
+        <button class="btn btn-primary" id="pumpBtn" onclick="simulatePumpOff()">Simulate Pump OFF</button>
+        <div id="pumpActionMsg" class="sim-note" style="display:none;">Preventive action simulated.</div>
+      </div>
+      <div class="card pad">
+        <div class="toggle-row">
+          <div>
+            <b>Auto Protection</b>
+            <div style="font-size:0.82rem;color:var(--ink-soft);margin-top:2px;">Automatically simulate pump OFF at 90%+ water level.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="autoProtect" onchange="toggleAutoProtect(this.checked)"><span class="slider-toggle"></span></label>
+        </div>
+        <div class="pump-note">Simulation only — no physical pump is connected.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RECOMMENDATION -->
+<section id="recommendation">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Guidance</div>
+      <h2>AquaGuard Smart Recommendation</h2>
+    </div>
+    <div class="card reco-card">
+      <div class="icon" id="recoIcon">🟡</div>
+      <p id="recoText">Monitor the tank regularly as the water level is increasing.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SUSTAINABILITY -->
+<section id="sustainability" style="background:var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Impact</div>
+      <h2>Why AquaGuard Matters</h2>
+      <p>Water overflow is preventable resource wastage. AquaGuard demonstrates how low-cost sensing and intelligent decision logic can support responsible water management.</p>
+    </div>
+    <div class="impact-grid">
+      <div class="card impact-card"><div class="ic">💧</div><h4>Water Conservation</h4><p>Reduce avoidable water loss.</p></div>
+      <div class="card impact-card"><div class="ic">⚡</div><h4>Energy Awareness</h4><p>Avoid unnecessary pumping.</p></div>
+      <div class="card impact-card"><div class="ic">🌱</div><h4>Environmental Responsibility</h4><p>Promote responsible resource management.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL IMPACT / SCALE -->
+<section id="scale">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Scalability</div>
+      <h2>From One Tank to a Smart Campus</h2>
+      <p>The same sensing-and-decision concept scales to homes, schools, colleges, hostels, hospitals, offices, apartment buildings and agricultural water systems.</p>
+    </div>
+    <div class="scale-flow">
+      <div class="scale-node">1 Tank</div><span class="scale-arrow">→</span>
+      <div class="scale-node">1 Building</div><span class="scale-arrow">→</span>
+      <div class="scale-node">Campus</div><span class="scale-arrow">→</span>
+      <div class="scale-node">Community</div>
+    </div>
+  </div>
+</section>
+
+<!-- FUTURE IOT -->
+<section id="future" style="background:var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Roadmap</div>
+      <h2>From Simulator to Real IoT System</h2>
+      <p>In the physical implementation, the simulated water-level input would be replaced by real ultrasonic sensor readings.</p>
+    </div>
+    <div class="future-grid">
+      <div class="card future-card">
+        <h4>Current MVP</h4>
+        <div class="chip-list"><span class="chip">Software Simulation</span><span class="chip">Browser-based</span><span class="chip">HTML / CSS / JS</span></div>
+      </div>
+      <div class="future-arrow">→</div>
+      <div class="card future-card">
+        <h4>Future Version</h4>
+        <div class="chip-list">
+          <span class="chip">Arduino / ESP32</span><span class="chip">Ultrasonic Sensor</span><span class="chip">LCD</span>
+          <span class="chip">Buzzer</span><span class="chip">Relay</span><span class="chip">Water Pump</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- IPO -->
+<section id="ipo">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">System Architecture</div>
+      <h2>Input → Process → Output</h2>
+    </div>
+    <div class="ipo-grid">
+      <div class="ipo-col">
+        <div class="ipo-title">Input</div>
+        <div class="ipo-node">Simulated Water Level</div>
+      </div>
+      <div class="ipo-arrow">→</div>
+      <div class="ipo-col">
+        <div class="ipo-title">Process</div>
+        <div class="ipo-node">Ultrasonic Sensor Simulation</div>
+        <div class="ipo-node">Arduino Decision Logic</div>
+        <div class="ipo-node">Risk Analysis</div>
+        <div class="ipo-node">Overflow Prediction</div>
+      </div>
+      <div class="ipo-arrow">→</div>
+      <div class="ipo-col">
+        <div class="ipo-title">Output</div>
+        <div class="ipo-node">LCD / Alert / Pump Action</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECHNOLOGY -->
+<section id="tech" style="background:var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Technology</div>
+      <h2>Technology Overview</h2>
+    </div>
+    <div class="tech-grid">
+      <div class="card pad tech-card">
+        <h4>Hardware Concept</h4>
+        <ul><li>Arduino</li><li>Ultrasonic Sensor</li><li>LCD</li><li>Buzzer</li><li>Relay</li><li>Pump</li></ul>
+      </div>
+      <div class="card pad tech-card">
+        <h4>Software Concept</h4>
+        <ul><li>HTML</li><li>CSS</li><li>JavaScript</li><li>Data Visualization</li><li>Decision Logic</li></ul>
+      </div>
+      <div class="card pad tech-card">
+        <h4>Current Implementation</h4>
+        <ul><li>Browser-based simulator</li><li>No backend / database</li><li>Runs fully client-side</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT / DISCLAIMER -->
+<section id="about">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">About This MVP</div>
+      <h2>Responsible Technology Disclaimer</h2>
+    </div>
+    <div class="disclaimer">
+      This is a software simulation of a proposed IoT water-monitoring system. Sensor readings, water-level changes, rise rates and pump actions are simulated for demonstration. They do not represent measurements from a physical tank.
+    </div>
+  </div>
+</section>
+
+<footer class="presentation-hide">
+  <div class="wrap">
+    <div class="brand-f">💧 AquaGuard</div>
+    <p>Smart Water Conservation & Overflow Prevention Simulator</p>
+    <p>© 2026 Dr. C. V. Krishnaveni</p>
+    <p>IQAC Coordinator & Lecturer in Computer Science</p>
+    <p>SKR & SKR Government College for Women (Autonomous), Kadapa, YSR District, Andhra Pradesh, India</p>
+    <p class="rights">All Rights Reserved.</p>
+  </div>
+</footer>
+
+<script>
+/* ================= STATE ================= */
+const TANK_HEIGHT_CM = 20;
+const RISE_RATE = 5; // %/min
+const CRITICAL_THRESHOLD = 90;
+
+let state = {
+  level: 50,
+  pumpOn: true,
+  autoProtect: false,
+  demoRunning: false,
+  presentation: false,
+  history: []
+};
+
+/* ================= HELPERS ================= */
+function scrollToId(id){
+  const el = document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function classify(level){
+  if(level >= 90) return 'critical';
+  if(level >= 80) return 'high';
+  if(level >= 60) return 'medium';
+  return 'normal';
+}
+
+const RISK_META = {
+  normal:  { label:'NORMAL',   icon:'🟢', desc:'Water level is within the safe operating range.',        action:'No action needed. Continue routine monitoring.', reco:'Water level is safe. Continue monitoring.', cls:'risk-normal' },
+  medium:  { label:'MEDIUM',   icon:'🟡', desc:'Continue monitoring the water level.',                    action:'Continue monitoring the water level.',            reco:'Monitor the tank regularly as the water level is increasing.', cls:'risk-medium' },
+  high:    { label:'HIGH',     icon:'🟠', desc:'Water level is approaching the critical threshold.',      action:'Activate warning and prepare pump cutoff.',       reco:'Inspect the tank and prepare preventive action.', cls:'risk-high' },
+  critical:{ label:'CRITICAL', icon:'🔴', desc:'Immediate preventive action recommended.',                 action:'Trigger overflow alert and cut off pump immediately.', reco:'Immediate pump cutoff is recommended to prevent overflow.', cls:'risk-critical' }
+};
+
+function sensorDistance(level){
+  return +(TANK_HEIGHT_CM * (1 - level/100)).toFixed(1);
+}
+function waterColumn(level){
+  return +(TANK_HEIGHT_CM * (level/100)).toFixed(1);
+}
+function timeToCritical(level){
+  if(level >= CRITICAL_THRESHOLD) return 0;
+  return +((CRITICAL_THRESHOLD - level) / RISE_RATE).toFixed(1);
+}
+
+/* ================= CORE RENDER ================= */
+function setLevel(val, addHistory){
+  state.level = Math.max(0, Math.min(100, Math.round(val)));
+  document.getElementById('levelSlider').value = state.level;
+  renderAll();
+  if(addHistory) pushHistory();
+}
+
+function renderAll(){
+  const level = state.level;
+  const risk = classify(level);
+  const meta = RISK_META[risk];
+  const dist = sensorDistance(level);
+  const col = waterColumn(level);
+
+  // hero + main tank visuals
+  ['heroWater','mainWater'].forEach(id=>{
+    document.getElementById(id).style.height = level + '%';
+  });
+  ['heroBeam','mainBeam'].forEach((id, i)=>{
+    const frameHeight = i===0 ? 260 : 340; // approx px heights, beam scales via percentage of frame
+    const beamPct = (100 - level); // beam shrinks as water rises
+    document.getElementById(id).style.height = (beamPct * 0.9) + '%';
+  });
+  document.getElementById('heroLevelReadout').textContent = level + '%';
+  document.getElementById('mainLevelReadout').textContent = level + '%';
+  document.getElementById('sliderValue').textContent = level + '%';
+
+  // sensor section
+  document.getElementById('mainDistance').textContent = dist.toFixed(1) + ' cm';
+  document.getElementById('mainRiskLabel').textContent = meta.icon + ' ' + meta.label;
+  document.getElementById('sensorReading').textContent = dist.toFixed(1) + ' cm';
+  document.getElementById('sensorLevelPct').textContent = level + '%';
+  document.getElementById('sensorColumn').textContent = col.toFixed(1) + ' cm';
+  document.getElementById('sensorDist2').textContent = dist.toFixed(1) + ' cm';
+
+  // decision engine
+  document.getElementById('decisionLevel').textContent = 'Water Level: ' + level + '%';
+  document.getElementById('decisionRisk').textContent = meta.label + ' RISK';
+  document.getElementById('decisionAction').textContent = meta.action;
+  const dCard = document.getElementById('decisionCard');
+  dCard.className = 'result-card ' + meta.cls;
+
+  // status banner
+  const banner = document.getElementById('statusBanner');
+  banner.className = 'status-banner ' + meta.cls;
+  document.getElementById('statusIcon').textContent = meta.icon;
+  document.getElementById('statusTitle').textContent = meta.label;
+  document.getElementById('statusDesc').textContent = meta.desc;
+
+  // risk legend highlight
+  document.querySelectorAll('#riskLegend .card').forEach(c=>{
+    c.classList.toggle('active', c.dataset.range === risk);
+  });
+
+  // prediction
+  const ttc = timeToCritical(level);
+  document.getElementById('predCurrent').textContent = level + '%';
+  document.getElementById('predRate').textContent = RISE_RATE + '%/min';
+  document.getElementById('predTime').textContent = (level>=CRITICAL_THRESHOLD ? 'At/above critical' : ttc.toFixed(1) + ' min');
+  document.getElementById('timelineFill').style.width = level + '%';
+  document.getElementById('timelineNow').style.left = level + '%';
+  document.getElementById('timelineMinLabel').textContent = level>=CRITICAL_THRESHOLD ? 'Critical threshold reached' : ('~' + ttc.toFixed(1) + ' min to critical');
+
+  // alerts
+  const aNone = document.getElementById('alertNone');
+  const aHigh = document.getElementById('alertHigh');
+  const aCrit = document.getElementById('alertCritical');
+  aNone.classList.remove('show'); aHigh.classList.remove('show'); aCrit.classList.remove('show');
+  if(level >= 90){ aCrit.classList.add('show'); }
+  else if(level >= 80){ aHigh.classList.add('show'); }
+  else { aNone.classList.add('show'); }
+
+  // recommendation
+  document.getElementById('recoIcon').textContent = meta.icon;
+  document.getElementById('recoText').textContent = meta.reco;
+
+  // auto protection
+  if(state.autoProtect && level >= 90 && state.pumpOn){
+    setPump(false);
+  }
+
+  updateChart();
+}
+
+/* ================= PUMP ================= */
+function setPump(on){
+  state.pumpOn = on;
+  const icon = document.getElementById('pumpIcon');
+  const label = document.getElementById('pumpStateLabel');
+  const btn = document.getElementById('pumpBtn');
+  const msg = document.getElementById('pumpActionMsg');
+  if(on){
+    icon.className = 'pump-icon on'; icon.textContent = '🟢';
+    label.textContent = 'RUNNING';
+    btn.disabled = false; btn.textContent = 'Simulate Pump OFF';
+    msg.style.display = 'none';
+  } else {
+    icon.className = 'pump-icon off'; icon.textContent = '🔴';
+    label.textContent = 'OFF';
+    btn.disabled = true;
+    msg.style.display = 'block';
+  }
+}
+function simulatePumpOff(){ setPump(false); }
+function toggleAutoProtect(checked){
+  state.autoProtect = checked;
+  if(checked && state.level >= 90 && state.pumpOn){ setPump(false); }
+}
+
+/* ================= HISTORY / CHART ================= */
+let chartInstance = null;
+function seedHistory(){
+  const base = [
+    {t:'10:00', v:45},{t:'10:01', v:50},{t:'10:02', v:58},
+    {t:'10:03', v:65},{t:'10:04', v:72},{t:'10:05', v:82}
+  ];
+  state.history = base;
+}
+function nowLabel(){
+  const d = new Date();
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') + ':' + d.getSeconds().toString().padStart(2,'0');
+}
+function pushHistory(){
+  state.history.push({t: nowLabel(), v: state.level});
+  if(state.history.length > 14) state.history.shift();
+  updateChart();
+}
+function updateChart(){
+  if(typeof Chart === 'undefined'){
+    return; // graceful fallback if CDN unavailable
+  }
+  const labels = state.history.map(p=>p.t);
+  const data = state.history.map(p=>p.v);
+  if(!chartInstance){
+    const ctx = document.getElementById('historyChart');
+    if(!ctx) return;
+    chartInstance = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels: labels,
+        datasets:[{
+          label:'Water Level (%)',
+          data: data,
+          borderColor:'#0e7c86',
+          backgroundColor:'rgba(14,124,134,0.12)',
+          borderWidth:3,
+          tension:0.35,
+          fill:true,
+          pointRadius:3,
+          pointBackgroundColor:'#0e7c86'
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{
+          y:{ min:0, max:100, grid:{color:'#e6f1f0'}, ticks:{color:'#4b6367'} },
+          x:{ grid:{display:false}, ticks:{color:'#4b6367'} }
+        }
+      }
+    });
+  } else {
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets[0].data = data;
+    chartInstance.update();
+  }
+}
+
+/* ================= RESET ================= */
+function resetSimulation(){
+  state.pumpOn = true;
+  state.autoProtect = false;
+  document.getElementById('autoProtect').checked = false;
+  setPump(true);
+  seedHistory();
+  setLevel(50, false);
+  updateChart();
+  showToast('Simulation reset.');
+}
+
+/* ================= DEMO ================= */
+function showToast(msg){
+  const t = document.getElementById('demoToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._tmr);
+  showToast._tmr = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+async function runDemo(){
+  if(state.demoRunning) return;
+  state.demoRunning = true;
+  const btn = document.getElementById('demoBtn');
+  btn.disabled = true;
+  btn.textContent = '🎬 Running Demo…';
+  setPump(true);
+  const stages = [50,60,70,80,90,95];
+  for(const s of stages){
+    setLevel(s, true);
+    if(s === 90) showToast('🚨 OVERFLOW RISK detected');
+    if(s === 95){
+      setPump(false);
+      showToast('🔴 PUMP OFF — preventive action simulated');
+    }
+    await new Promise(r=>setTimeout(r, 1400));
+  }
+  showToast('✅ Overflow prevented — simulation complete.');
+  btn.disabled = false;
+  btn.textContent = '🎬 Run Demo';
+  state.demoRunning = false;
+}
+
+/* ================= PRESENTATION MODE ================= */
+function togglePresentation(on){
+  state.presentation = on;
+  document.body.classList.toggle('presentation', on);
+  if(on) scrollToId('simulator');
+}
+
+/* ================= EVENTS ================= */
+document.getElementById('levelSlider').addEventListener('input', (e)=>{
+  setLevel(+e.target.value, false);
+});
+document.getElementById('levelSlider').addEventListener('change', (e)=>{
+  pushHistory();
+});
+
+/* ================= INIT ================= */
+seedHistory();
+setLevel(50, false);
+setPump(true);
+updateChart();
+</script>
+</body>
+</html>
